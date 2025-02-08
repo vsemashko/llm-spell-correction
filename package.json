@@ -22,9 +22,18 @@
       "description": "Select the AI provider to use",
       "required": true,
       "data": [
-        { "title": "OpenAI", "value": "openai" },
-        { "title": "Claude", "value": "claude" },
-        { "title": "Ollama", "value": "ollama" }
+        {
+          "title": "OpenAI",
+          "value": "openai"
+        },
+        {
+          "title": "Claude",
+          "value": "claude"
+        },
+        {
+          "title": "Ollama",
+          "value": "ollama"
+        }
       ],
       "default": "openai"
     },
@@ -42,14 +51,38 @@
       "description": "Select the model type based on your chosen provider",
       "required": true,
       "data": [
-        { "title": "OpenAI - GPT-4o mini", "value": "gpt-4o-mini" },
-        { "title": "OpenAI - GPT-4o", "value": "gpt-4o" },
-        { "title": "OpenAI - GPT-3.5 Turbo", "value": "gpt-3.5-turbo" },
-        { "title": "Claude - 3 Opus", "value": "claude-3-opus-20240229" },
-        { "title": "Claude - 3 Sonnet", "value": "claude-3-5-sonnet-latest" },
-        { "title": "Claude - 3 Haiku", "value": "claude-3-5-haiku-latest" },
-        { "title": "Phi-4", "value": "phi4:latest" },
-        { "title": "Llama 3.2 3B", "value": "llama3.2:3b" }
+        {
+          "title": "OpenAI - GPT-4o mini",
+          "value": "gpt-4o-mini"
+        },
+        {
+          "title": "OpenAI - GPT-4o",
+          "value": "gpt-4o"
+        },
+        {
+          "title": "OpenAI - GPT-3.5 Turbo",
+          "value": "gpt-3.5-turbo"
+        },
+        {
+          "title": "Claude - 3 Opus",
+          "value": "claude-3-opus-20240229"
+        },
+        {
+          "title": "Claude - 3 Sonnet",
+          "value": "claude-3-5-sonnet-latest"
+        },
+        {
+          "title": "Claude - 3 Haiku",
+          "value": "claude-3-5-haiku-latest"
+        },
+        {
+          "title": "Phi-4",
+          "value": "phi4:latest"
+        },
+        {
+          "title": "Llama 3.2 3B",
+          "value": "llama3.2:3b"
+        }
       ],
       "default": "gpt-4o-mini"
     },
@@ -117,7 +150,8 @@
   },
   "categories": [
     "Productivity",
-    "Communication",    "Other"
+    "Communication",
+    "Other"
   ],
   "contributors": []
 }
