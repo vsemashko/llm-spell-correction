@@ -5,24 +5,39 @@ import { OpenAIResponse, ClaudeResponse, LlamaResponse } from "./types";
 interface Preferences {
   apiToken?: string;
   apiProvider: APIProvider;
-  openaiModel?: string;
-  openaiCustomModel?: string;
-  claudeModel?: string;
-  claudeCustomModel?: string;
-  llamaModel?: string;
-  llamaCustomModel?: string;
+  modelType?: string;
+  customModel?: string;
   systemPrompt?: string;
   temperature?: string;
   maxTokens?: string;
+  apiUrl?: string;
 }
 
 type APIProvider = "openai" | "claude" | "llama";
 
-const API_URLS = {
-  openai: "https://api.openai.com/v1/chat/completions",
-  llama: "http://localhost:11434/api/generate", // Adjust if using a different LLaMA API
-  claude: "https://api.anthropic.com/v1/messages",
+const getApiUrl = (preferences: Preferences, provider: APIProvider): string => {
+  if (preferences.apiUrl) return preferences.apiUrl;
+  
+  return {
+    openai: "https://api.openai.com/v1/chat/completions",
+    llama: "http://localhost:11434/api/generate",
+    claude: "https://api.anthropic.com/v1/messages",
+  }[provider];
 };
+
+const DEFAULT_SYSTEM_PROMPT = `You are an AI assistant responsible for correcting spelling errors in a text selection while preserving structured elements such as code snippets, constants, bracketed text ([]), inline code ( ), special characters, and numerical values.
+
+Follow these steps:
+Carefully analyze the provided text.
+Identify and correct only misspelled words in natural language text.
+Preserve code, constants, bracketed text, inline code, symbols, and numerical values exactly as they appear.
+Review the corrected text to ensure that all spelling errors are fixed without modifying protected elements.
+
+Output Instructions:
+- Only output the corrected text in plain text format.
+- Do not modify or remove any bracketed text ([]), code snippets, inline code, constants, symbols, or numbers.
+- Do not reformat the text or add any additional content.
+- Ensure compliance with ALL these instructions.`;
 
 async function correctWithOpenAI(
   inputText: string,
@@ -31,8 +46,9 @@ async function correctWithOpenAI(
   systemPrompt: string,
   temperature: number,
   maxTokens: number,
+  apiUrl: string,
 ): Promise<string> {
-  const response = await fetch(API_URLS.openai, {
+  const response = await fetch(apiUrl, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${apiKey}`,
@@ -60,8 +76,9 @@ async function correctWithClaude(
   systemPrompt: string,
   temperature: number,
   maxTokens: number,
+  apiUrl: string,
 ): Promise<string> {
-  const response = await fetch(API_URLS.claude, {
+  const response = await fetch(apiUrl, {
     method: "POST",
     headers: {
       "x-api-key": apiKey,
@@ -88,8 +105,9 @@ async function correctWithLlama(
   systemPrompt: string,
   temperature: number,
   maxTokens: number,
+  apiUrl: string,
 ): Promise<string> {
-  const response = await fetch(API_URLS.llama, {
+  const response = await fetch(apiUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -116,14 +134,15 @@ async function correctText(
   systemPrompt: string,
   temperature: number,
   maxTokens: number,
+  apiUrl: string,
 ): Promise<string> {
   switch (apiProvider) {
     case "openai":
-      return correctWithOpenAI(inputText, apiKey, model, systemPrompt, temperature, maxTokens);
+      return correctWithOpenAI(inputText, apiKey, model, systemPrompt, temperature, maxTokens, apiUrl);
     case "claude":
-      return correctWithClaude(inputText, apiKey, model, systemPrompt, temperature, maxTokens);
+      return correctWithClaude(inputText, apiKey, model, systemPrompt, temperature, maxTokens, apiUrl);
     case "llama":
-      return correctWithLlama(inputText, model, systemPrompt, temperature, maxTokens);
+      return correctWithLlama(inputText, model, systemPrompt, temperature, maxTokens, apiUrl);
     default:
       throw new Error(`Unsupported API provider: ${apiProvider}`);
   }
@@ -134,6 +153,7 @@ export default async function main() {
     const preferences = getPreferenceValues<Preferences>();
     const apiProvider: APIProvider = preferences.apiProvider;
     const apiKey = preferences.apiToken;
+    const apiUrl = getApiUrl(preferences, apiProvider);
 
     // Validate API token for OpenAI and Claude
     if ((apiProvider === "openai" || apiProvider === "claude") && !apiKey) {
@@ -141,28 +161,11 @@ export default async function main() {
     }
 
     // Get the appropriate model based on provider
-    const model = (() => {
-      switch (apiProvider) {
-        case "openai":
-          return preferences.openaiModel === "custom"
-            ? preferences.openaiCustomModel || "gpt-3.5-turbo"
-            : preferences.openaiModel || "gpt-3.5-turbo";
-        case "claude":
-          return preferences.claudeModel === "custom"
-            ? preferences.claudeCustomModel || "claude-3-sonnet-20240229"
-            : preferences.claudeModel || "claude-3-sonnet-20240229";
-        case "llama":
-          return preferences.llamaModel === "custom"
-            ? preferences.llamaCustomModel || "llama2"
-            : preferences.llamaModel || "llama2";
-        default:
-          throw new Error(`Unsupported provider: ${apiProvider}`);
-      }
-    })();
+    const model = preferences.modelType === "custom" 
+      ? preferences.customModel || "gpt-3.5-turbo"
+      : preferences.modelType || "gpt-3.5-turbo";
 
-    const systemPrompt =
-      preferences.systemPrompt ||
-      "You are an AI assistant responsible for correcting spelling errors in a text selection while preserving structured elements such as code snippets, constants, bracketed text ([]), inline code ( ), special characters, and numerical values.\n\nFollow these steps:\nCarefully analyze the provided text.\nIdentify and correct only misspelled words in natural language text.\nPreserve code, constants, bracketed text, inline code, symbols, and numerical values exactly as they appear.\nReview the corrected text to ensure that all spelling errors are fixed without modifying protected elements.\nOutput Instructions:\n- Only output the corrected text in plain text format.\n- Do not modify or remove any bracketed text ([]), code snippets, inline code, constants, symbols, or numbers.\n- Do not reformat the text or add any additional content.\n- Ensure compliance with ALL these instructions.";
+    const systemPrompt = preferences.systemPrompt || DEFAULT_SYSTEM_PROMPT;
     const temperature = parseFloat(preferences.temperature || "0");
     const maxTokens = parseInt(preferences.maxTokens || "1024", 10);
 
@@ -177,6 +180,7 @@ export default async function main() {
       systemPrompt,
       temperature,
       maxTokens,
+      apiUrl,
     );
     await Clipboard.paste(correctedText);
     await showHUD("✅ Text corrected!");
