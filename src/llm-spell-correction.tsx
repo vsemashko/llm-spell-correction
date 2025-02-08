@@ -112,7 +112,8 @@ async function correctWithOLlama(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: model,
-      prompt: `${systemPrompt}\n\n${inputText}`,
+      system: systemPrompt,
+      prompt: inputText,
       stream: false,
       options: {
         temperature,
@@ -136,15 +137,33 @@ async function correctText(
   maxTokens: number,
   apiUrl: string,
 ): Promise<string> {
-  switch (apiProvider) {
-    case "openai":
-      return correctWithOpenAI(inputText, apiKey, model, systemPrompt, temperature, maxTokens, apiUrl);
-    case "claude":
-      return correctWithClaude(inputText, apiKey, model, systemPrompt, temperature, maxTokens, apiUrl);
-    case "ollama":
-      return correctWithOLlama(inputText, model, systemPrompt, temperature, maxTokens, apiUrl);
-    default:
-      throw new Error(`Unsupported API provider: ${apiProvider}`);
+  /*if (environment.isDevelopment) {
+    await showHUD(`🔍 Using: ${apiProvider}, ${model}, System: ${systemPrompt.slice(0, 50)}, Input: ${inputText.slice(0, 50)}`);
+  }*/
+
+  let result: string;
+  try {
+    switch (apiProvider) {
+      case "openai":
+        result = await correctWithOpenAI(inputText, apiKey, model, systemPrompt, temperature, maxTokens, apiUrl);
+        break;
+      case "claude":
+        result = await correctWithClaude(inputText, apiKey, model, systemPrompt, temperature, maxTokens, apiUrl);
+        break;
+      case "ollama":
+        result = await correctWithOLlama(inputText, model, systemPrompt, temperature, maxTokens, apiUrl);
+        break;
+      default:
+        throw new Error(`Unsupported API provider: ${apiProvider}`);
+    }
+    
+    /*if (environment.isDevelopment) {
+      await showHUD(`📥 Response: ${result.slice(0, 50)}...`);
+    }*/
+    return result;
+  } catch (error) {
+    await showHUD(`🐛 Error: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
   }
 }
 
