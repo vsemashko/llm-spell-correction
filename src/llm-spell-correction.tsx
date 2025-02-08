@@ -1,26 +1,26 @@
 import { getSelectedText, Clipboard, showHUD, getPreferenceValues } from "@raycast/api";
 import fetch from "node-fetch";
-import { OpenAIResponse, ClaudeResponse, LlamaResponse } from "./types";
+import { OpenAIResponse, ClaudeResponse, OLlamaResponse } from "./types";
 
 interface Preferences {
   apiToken?: string;
   apiProvider: APIProvider;
-  modelType?: string;
-  customModel?: string;
+  modelType: string;
+  customModel: string;
   systemPrompt?: string;
   temperature?: string;
   maxTokens?: string;
   apiUrl?: string;
 }
 
-type APIProvider = "openai" | "claude" | "llama";
+type APIProvider = "openai" | "claude" | "ollama";
 
 const getApiUrl = (preferences: Preferences, provider: APIProvider): string => {
   if (preferences.apiUrl) return preferences.apiUrl;
   
   return {
     openai: "https://api.openai.com/v1/chat/completions",
-    llama: "http://localhost:11434/api/generate",
+    ollama: "http://localhost:11434/api/generate",
     claude: "https://api.anthropic.com/v1/messages",
   }[provider];
 };
@@ -99,7 +99,7 @@ async function correctWithClaude(
   return data.content[0].text.trim();
 }
 
-async function correctWithLlama(
+async function correctWithOLlama(
   inputText: string,
   model: string,
   systemPrompt: string,
@@ -121,8 +121,8 @@ async function correctWithLlama(
     }),
   });
 
-  const data = (await response.json()) as LlamaResponse;
-  if (!response.ok) throw new Error(`LLaMA API error: ${JSON.stringify(data)}`);
+  const data = (await response.json()) as OLlamaResponse;
+  if (!response.ok) throw new Error(`OLLaMA API error: ${JSON.stringify(data)}`);
   return data.response.trim();
 }
 
@@ -141,8 +141,8 @@ async function correctText(
       return correctWithOpenAI(inputText, apiKey, model, systemPrompt, temperature, maxTokens, apiUrl);
     case "claude":
       return correctWithClaude(inputText, apiKey, model, systemPrompt, temperature, maxTokens, apiUrl);
-    case "llama":
-      return correctWithLlama(inputText, model, systemPrompt, temperature, maxTokens, apiUrl);
+    case "ollama":
+      return correctWithOLlama(inputText, model, systemPrompt, temperature, maxTokens, apiUrl);
     default:
       throw new Error(`Unsupported API provider: ${apiProvider}`);
   }
@@ -161,9 +161,9 @@ export default async function main() {
     }
 
     // Get the appropriate model based on provider
-    const model = preferences.modelType === "custom" 
-      ? preferences.customModel || "gpt-3.5-turbo"
-      : preferences.modelType || "gpt-3.5-turbo";
+    const model = preferences.customModel !== "-" 
+      ? preferences.customModel 
+      : preferences.modelType || "gpt-4o-mini";
 
     const systemPrompt = preferences.systemPrompt || DEFAULT_SYSTEM_PROMPT;
     const temperature = parseFloat(preferences.temperature || "0");
