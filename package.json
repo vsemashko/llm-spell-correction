@@ -1,0 +1,68 @@
+{
+  "$schema": "https://www.raycast.com/schemas/extension.json",
+  "name": "llm-spellfixer",
+  "title": "Llm Spellfixer",
+  "description": "Automatically corrects selected text with LLM and replaces the selection with corrected text",
+  "icon": "extension-icon.png",
+  "author": "vladimir_semashko",
+  "license": "MIT",
+  "commands": [
+    {
+      "name": "llm-spell-correction",
+      "title": "Correct Spelling with Llm",
+      "description": "Automatically corrects selected text with LLM and replaces the selection with corrected text",
+      "mode": "no-view"
+    }
+  ],
+  "preferences": [
+    {
+      "name": "openAiToken",
+      "type": "password",
+      "title": "OpenAI API Token",
+      "description": "Enter your OpenAI API Token for authentication",
+      "required": true
+    },
+    {
+      "name": "systemPrompt",
+      "type": "textfield",
+      "title": "System Prompt",
+      "description": "Customize the system prompt for spell correction. Leave empty to use the default prompt.",
+      "required": false,
+      "default": "You are an AI assistant responsible for correcting spelling errors in a text selection while preserving structured elements such as code snippets, constants, bracketed text ([]), inline code ( ), special characters, and numerical values.\n\nFollow these steps:\nCarefully analyze the provided text.\nIdentify and correct only misspelled words in natural language text.\nPreserve code, constants, bracketed text, inline code, symbols, and numerical values exactly as they appear.\nReview the corrected text to ensure that all spelling errors are fixed without modifying protected elements.\nOutput Instructions:\n- Only output the corrected text in plain text format.\n- Do not modify or remove any bracketed text ([]), code snippets, inline code, constants, symbols, or numbers.\n- Do not reformat the text or add any additional content.\n- Ensure compliance with ALL these instructions."
+    },
+    {
+      "name": "model",
+      "type": "dropdown",
+      "title": "LLM Model",
+      "description": "Select the LLM model for spell correction",
+      "required": false,
+      "data": [
+        { "title": "GPT-4o", "value": "gpt-4o" },
+        { "title": "GPT-4o-mini", "value": "gpt-4o-mini" },
+        { "title": "GPT-3.5-turbo", "value": "gpt-3.5-turbo" }
+      ],
+      "default": "gpt-4o-mini"
+    }
+  ],
+  "dependencies": {
+    "@raycast/api": "^1.90.0",
+    "@raycast/utils": "^1.17.0",
+    "node-fetch": "^3.3.2"
+  },
+  "devDependencies": {
+    "@raycast/eslint-config": "^1.0.11",
+    "@types/node": "20.8.10",
+    "@types/react": "18.3.3",
+    "eslint": "^8.57.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.4.5"
+  },
+  "scripts": {
+    "build": "ray build",
+    "dev": "ray develop",
+    "fix-lint": "ray lint --fix",
+    "lint": "ray lint",
+    "prepublishOnly": "echo \"\\n\\nIt seems like you are trying to publish the Raycast extension to npm.\\n\\nIf you did intend to publish it to npm, remove the \\`prepublishOnly\\` script and rerun \\`npm publish\\` again.\\nIf you wanted to publish it to the Raycast Store instead, use \\`npm run publish\\` instead.\\n\\n\" && exit 1",
+    "publish": "npx @raycast/api@latest publish"
+  }
+}
