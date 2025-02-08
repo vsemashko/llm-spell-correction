@@ -17,7 +17,7 @@ type APIProvider = "openai" | "claude" | "ollama";
 
 const getApiUrl = (preferences: Preferences, provider: APIProvider): string => {
   if (preferences.apiUrl) return preferences.apiUrl;
-  
+
   return {
     openai: "https://api.openai.com/v1/chat/completions",
     ollama: "http://localhost:11434/api/generate",
@@ -156,7 +156,7 @@ async function correctText(
       default:
         throw new Error(`Unsupported API provider: ${apiProvider}`);
     }
-    
+
     /*if (environment.isDevelopment) {
       await showHUD(`📥 Response: ${result.slice(0, 50)}...`);
     }*/
@@ -180,9 +180,7 @@ export default async function main() {
     }
 
     // Get the appropriate model based on provider
-    const model = preferences.customModel !== "-" 
-      ? preferences.customModel 
-      : preferences.modelType || "gpt-4o-mini";
+    const model = preferences.customModel !== "-" ? preferences.customModel : preferences.modelType || "gpt-4o-mini";
 
     const systemPrompt = preferences.systemPrompt || DEFAULT_SYSTEM_PROMPT;
     const temperature = parseFloat(preferences.temperature || "0");
