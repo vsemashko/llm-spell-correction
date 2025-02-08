@@ -3,10 +3,17 @@ import fetch from "node-fetch";
 import { OpenAIResponse, ClaudeResponse, LlamaResponse } from "./types";
 
 interface Preferences {
-  openAiToken: string;
-  model: string;
+  apiToken?: string;
   apiProvider: APIProvider;
+  openaiModel?: string;
+  openaiCustomModel?: string;
+  claudeModel?: string;
+  claudeCustomModel?: string;
+  llamaModel?: string;
+  llamaCustomModel?: string;
   systemPrompt?: string;
+  temperature?: string;
+  maxTokens?: string;
 }
 
 type APIProvider = "openai" | "claude" | "llama";
@@ -22,6 +29,8 @@ async function correctWithOpenAI(
   apiKey: string,
   model: string,
   systemPrompt: string,
+  temperature: number,
+  maxTokens: number,
 ): Promise<string> {
   const response = await fetch(API_URLS.openai, {
     method: "POST",
@@ -35,8 +44,8 @@ async function correctWithOpenAI(
         { role: "system", content: systemPrompt },
         { role: "user", content: inputText },
       ],
-      temperature: 0,
-      max_tokens: 1024,
+      temperature,
+      max_tokens: maxTokens,
     }),
   });
   const data = (await response.json()) as OpenAIResponse;
@@ -49,6 +58,8 @@ async function correctWithClaude(
   apiKey: string,
   model: string,
   systemPrompt: string,
+  temperature: number,
+  maxTokens: number,
 ): Promise<string> {
   const response = await fetch(API_URLS.claude, {
     method: "POST",
@@ -61,8 +72,8 @@ async function correctWithClaude(
       model: model,
       system: systemPrompt,
       messages: [{ role: "user", content: inputText }],
-      temperature: 0,
-      max_tokens: 1024,
+      temperature,
+      max_tokens: maxTokens,
     }),
   });
 
@@ -71,7 +82,13 @@ async function correctWithClaude(
   return data.content[0].text.trim();
 }
 
-async function correctWithLlama(inputText: string, model: string, systemPrompt: string): Promise<string> {
+async function correctWithLlama(
+  inputText: string,
+  model: string,
+  systemPrompt: string,
+  temperature: number,
+  maxTokens: number,
+): Promise<string> {
   const response = await fetch(API_URLS.llama, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -79,7 +96,10 @@ async function correctWithLlama(inputText: string, model: string, systemPrompt: 
       model: model,
       prompt: `${systemPrompt}\n\n${inputText}`,
       stream: false,
-      temperature: 0,
+      options: {
+        temperature,
+        num_predict: maxTokens,
+      },
     }),
   });
 
@@ -94,14 +114,16 @@ async function correctText(
   model: string,
   apiProvider: APIProvider,
   systemPrompt: string,
+  temperature: number,
+  maxTokens: number,
 ): Promise<string> {
   switch (apiProvider) {
     case "openai":
-      return correctWithOpenAI(inputText, apiKey, model, systemPrompt);
+      return correctWithOpenAI(inputText, apiKey, model, systemPrompt, temperature, maxTokens);
     case "claude":
-      return correctWithClaude(inputText, apiKey, model, systemPrompt);
+      return correctWithClaude(inputText, apiKey, model, systemPrompt, temperature, maxTokens);
     case "llama":
-      return correctWithLlama(inputText, model, systemPrompt);
+      return correctWithLlama(inputText, model, systemPrompt, temperature, maxTokens);
     default:
       throw new Error(`Unsupported API provider: ${apiProvider}`);
   }
@@ -110,17 +132,52 @@ async function correctText(
 export default async function main() {
   try {
     const preferences = getPreferenceValues<Preferences>();
-    const apiKey = preferences.openAiToken;
-    const model = preferences.model || "gpt-4o-mini";
-    const apiProvider: APIProvider = preferences.apiProvider || "openai";
+    const apiProvider: APIProvider = preferences.apiProvider;
+    const apiKey = preferences.apiToken;
+
+    // Validate API token for OpenAI and Claude
+    if ((apiProvider === "openai" || apiProvider === "claude") && !apiKey) {
+      throw new Error(`API token is required for ${apiProvider}`);
+    }
+
+    // Get the appropriate model based on provider
+    const model = (() => {
+      switch (apiProvider) {
+        case "openai":
+          return preferences.openaiModel === "custom"
+            ? preferences.openaiCustomModel || "gpt-3.5-turbo"
+            : preferences.openaiModel || "gpt-3.5-turbo";
+        case "claude":
+          return preferences.claudeModel === "custom"
+            ? preferences.claudeCustomModel || "claude-3-sonnet-20240229"
+            : preferences.claudeModel || "claude-3-sonnet-20240229";
+        case "llama":
+          return preferences.llamaModel === "custom"
+            ? preferences.llamaCustomModel || "llama2"
+            : preferences.llamaModel || "llama2";
+        default:
+          throw new Error(`Unsupported provider: ${apiProvider}`);
+      }
+    })();
+
     const systemPrompt =
       preferences.systemPrompt ||
       "You are an AI assistant responsible for correcting spelling errors in a text selection while preserving structured elements such as code snippets, constants, bracketed text ([]), inline code ( ), special characters, and numerical values.\n\nFollow these steps:\nCarefully analyze the provided text.\nIdentify and correct only misspelled words in natural language text.\nPreserve code, constants, bracketed text, inline code, symbols, and numerical values exactly as they appear.\nReview the corrected text to ensure that all spelling errors are fixed without modifying protected elements.\nOutput Instructions:\n- Only output the corrected text in plain text format.\n- Do not modify or remove any bracketed text ([]), code snippets, inline code, constants, symbols, or numbers.\n- Do not reformat the text or add any additional content.\n- Ensure compliance with ALL these instructions.";
+    const temperature = parseFloat(preferences.temperature || "0");
+    const maxTokens = parseInt(preferences.maxTokens || "1024", 10);
 
     const selectedText = await getSelectedText();
     await showHUD("🔄 Correcting text...");
 
-    const correctedText = await correctText(selectedText, apiKey, model, apiProvider, systemPrompt);
+    const correctedText = await correctText(
+      selectedText,
+      apiKey || "",
+      model,
+      apiProvider,
+      systemPrompt,
+      temperature,
+      maxTokens,
+    );
     await Clipboard.paste(correctedText);
     await showHUD("✅ Text corrected!");
   } catch (error) {
