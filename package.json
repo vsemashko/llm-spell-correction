@@ -59,14 +59,16 @@
       "title": "Custom Model",
       "description": "Enter a custom model identifier (e.g., 'mistral:latest' for Ollama) or leave as '-' to use the model selected above",
       "required": true,
-      "default": "-"
+      "default": "-",
+      "placeholder": "e.g., mistral:latest"
     },
     {
       "name": "systemPrompt",
       "type": "textfield",
       "title": "System Prompt",
       "description": "Customize the system prompt for spell correction. Leave empty to use the default prompt.",
-      "required": false
+      "required": false,
+      "placeholder": "Enter your custom prompt here"
     },
     {
       "name": "temperature",
@@ -74,7 +76,8 @@
       "title": "Temperature",
       "description": "Set the model's temperature (0-1). Lower values make output more focused and deterministic.",
       "required": false,
-      "default": "0"
+      "default": "0",
+      "placeholder": "0.0-1.0"
     },
     {
       "name": "maxTokens",
@@ -111,5 +114,11 @@
     "fix-lint": "ray lint --fix",
     "lint": "ray lint",
     "publish": "npx @raycast/api@latest publish"
-  }
+  },
+  "categories": [
+    "Productivity",
+    "Communication",
+    "Other"
+  ],
+  "contributors": []
 }
